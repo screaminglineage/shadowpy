@@ -51,9 +51,9 @@ def create_handle(directory_path):
 # _FILE_NOTIFY_INFORMATION from winapi 
 class FileNotifyInformation(ctypes.Structure):
     _fields_ = [("NextEntryOffset", wintypes.DWORD), 
-    ("Action", wintypes.DWORD), 
-    ("FileNameLength", wintypes.DWORD), 
-    ("FileName", wintypes.WCHAR * 1)] 
+                ("Action", wintypes.DWORD), 
+                ("FileNameLength", wintypes.DWORD), 
+                ("FileName", wintypes.WCHAR * 1)] 
 
 def read_directory_changes(directory_handle):
     BUFFER_SIZE = 1024
@@ -79,17 +79,11 @@ def read_directory_changes(directory_handle):
     return FileNotifyInformation.from_buffer(file_info_buffer, 0)
 
 
-def parse_filename(file_notify_info):
-    data = file_notify_info
+def parse_filename(data):
     filename_offset = getattr(FileNotifyInformation,"FileName").offset
-    while True:
-        filename_address = ctypes.cast(ctypes.addressof(data) + filename_offset, ctypes.POINTER(wintypes.WCHAR))
-        filename = ctypes.wstring_at(filename_address, data.FileNameLength // 2)
-        yield filename
-
-        if not data.NextEntryOffset:
-            return
-        data = ctypes.cast(ctypes.addressof(data) + data.NextEntryOffset, ctype.POINTER(FileNotifyInformation))
+    filename_address = ctypes.cast(ctypes.addressof(data) + filename_offset, ctypes.POINTER(wintypes.WCHAR))
+    filename = ctypes.wstring_at(filename_address, data.FileNameLength // 2)
+    return filename
 
 def cleanup_handle(handle):
     if not ctypes.windll.kernel32.CloseHandle(handle):
